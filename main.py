@@ -52,9 +52,9 @@ def pdf_page_to_image(pdf_bytes, page_idx):
     return Image.frombuffer("RGB", (pix.width, pix.height), pix.samples, "raw", "RGB", 0, 1)
 
 
-# --- Overlay rouge/bleu + fond blanc ---
+# --- Overlay rouge/bleu + fond blanc + traits V1 gris clair ---
 def compute_overlay(img1, img2, tolerance, enhance_factor):
-    # Convertir en niveaux de gris + flou
+    # Conversion en niveaux de gris + flou
     g1 = img1.convert("L").filter(ImageFilter.GaussianBlur(radius=1))
     g2 = img2.convert("L").filter(ImageFilter.GaussianBlur(radius=1))
 
@@ -74,14 +74,9 @@ def compute_overlay(img1, img2, tolerance, enhance_factor):
     # --- FOND BLANC ---
     background = np.full((*arr1.shape, 3), 255, dtype=np.uint8)
 
-    # --- TRAITS D’ORIGINE EN GRIS CLAIR ---
-    # On prend la version 1 en niveaux de gris
+    # --- TRAITS V1 EN GRIS CLAIR ---
     base_gray = np.array(img1.convert("L")).astype(np.uint8)
-
-    # On éclaircit pour obtenir un gris clair (valeur ~200)
     base_gray = np.clip(base_gray * 0.6 + 150, 0, 255).astype(np.uint8)
-
-    # On duplique en RGB
     base_gray_rgb = np.stack([base_gray]*3, axis=-1)
 
     # --- COULEURS DES MODIFICATIONS ---
@@ -94,30 +89,12 @@ def compute_overlay(img1, img2, tolerance, enhance_factor):
     # Détermination ajout / suppression
     mask_v1 = np.repeat((arr1 > arr2)[..., None], 3, axis=2)
 
-    # Construction overlay final :
-    # 1. fond blanc
-    # 2. traits V1 en gris clair
-    # 3. modifications en rouge/bleu
+    # Construction overlay final
     overlay = background.copy()
     overlay = np.where(~mask3, base_gray_rgb, overlay)          # traits V1
     overlay = np.where(mask3, np.where(mask_v1, blue, red), overlay)  # diff
 
     return Image.fromarray(overlay.astype(np.uint8), mode="RGB")
-
-# --- Export PDF ---
-def export_pdf_from_image(img):
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    png_bytes = buf.getvalue()
-
-    pdf = fitz.open()
-    rect = fitz.Rect(0, 0, img.width, img.height)
-    page = pdf.new_page(width=img.width, height=img.height)
-    page.insert_image(rect, stream=png_bytes)
-
-    pdf_bytes = pdf.write()
-    pdf.close()
-    return pdf_bytes
 
 
 # --- Main logic ---
@@ -138,7 +115,7 @@ if pdf_file_1 and pdf_file_2:
         st.sidebar.write("Ce PDF contient une seule page.")
         page_index = 1
 
-    # Valeurs par défaut modifiées
+    # Valeurs par défaut demandées
     tolerance = st.sidebar.slider("Tolérance (épaisseur de trait)", 0, 100, 50)
     enhance = st.sidebar.slider("Renforcement des différences", 1, 10, 2)
 
@@ -156,15 +133,22 @@ if pdf_file_1 and pdf_file_2:
         </div>
         """,
         unsafe_allow_html=True
-)
+    )
 
-
-    # Affichage direct sans zoom d'affichage
+    # Affichage direct
     st.image(diff_img)
 
-    # Export PDF
-    pdf_bytes = export_pdf_from_image(diff_img)
-    st.download_button("✔️ Télécharger la visualisation", pdf_bytes, "Plans_Comparaison.pdf", "application/pdf")
+    # Export PNG uniquement
+    buf = io.BytesIO()
+    diff_img.save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+
+    st.download_button(
+        "✔️ Télécharger la visualisation",
+        png_bytes,
+        "Plans_Comparaison.png",
+        "image/png"
+    )
 
 else:
     st.info("Importe deux fichiers PDF pour commencer la comparaison.")
