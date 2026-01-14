@@ -46,7 +46,7 @@ def pdf_page_to_image(pdf_bytes, page_idx):
     page = doc.load_page(page_idx)
 
     # Zoom PDF FIXÉ À 2
-    mat = fitz.Matrix(2, 2)
+    mat = fitz.Matrix(1.5, 1.5)
     pix = page.get_pixmap(matrix=mat)
 
     return Image.frombuffer("RGB", (pix.width, pix.height), pix.samples, "raw", "RGB", 0, 1)
@@ -152,3 +152,4 @@ if pdf_file_1 and pdf_file_2:
 
 else:
     st.info("Importe deux fichiers PDF pour commencer la comparaison.")
+
