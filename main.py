@@ -46,7 +46,7 @@ def pdf_page_to_image(pdf_bytes, page_idx):
     page = doc.load_page(page_idx)
 
     # Zoom PDF FIXÉ À 2
-    mat = fitz.Matrix(2, 2)
+    mat = fitz.Matrix(1.5, 1.5)
     pix = page.get_pixmap(matrix=mat)
 
     return Image.frombuffer("RGB", (pix.width, pix.height), pix.samples, "raw", "RGB", 0, 1)
@@ -55,8 +55,8 @@ def pdf_page_to_image(pdf_bytes, page_idx):
 # --- Overlay rouge/bleu + fond blanc + traits V1 gris clair ---
 def compute_overlay(img1, img2, tolerance, enhance_factor):
     # Conversion en niveaux de gris + flou
-    g1 = img1.convert("L").filter(ImageFilter.GaussianBlur(radius=1))
-    g2 = img2.convert("L").filter(ImageFilter.GaussianBlur(radius=1))
+    g1 = img1.convert("L").filter(ImageFilter.GaussianBlur(radius=0.5))
+    g2 = img2.convert("L").filter(ImageFilter.GaussianBlur(radius=0.5))
 
     arr1 = np.array(g1).astype(np.int16)
     arr2 = np.array(g2).astype(np.int16)
@@ -152,5 +152,6 @@ if pdf_file_1 and pdf_file_2:
 
 else:
     st.info("Importe deux fichiers PDF pour commencer la comparaison.")
+
 
 
