@@ -53,10 +53,10 @@ def pdf_page_to_image(pdf_bytes, page_idx):
 
 
 # --- Overlay rouge/bleu + fond blanc + traits V1 gris clair ---
-def compute_overlay(img1, img2, tolerance, enhance_factor):
+def compute_overlay(img1, img2, tolerance, enhance_factor,blur_radius):
     # Conversion en niveaux de gris + flou
-    g1 = img1.convert("L").filter(ImageFilter.GaussianBlur(radius=0.5))
-    g2 = img2.convert("L").filter(ImageFilter.GaussianBlur(radius=0.5))
+    g1 = img1.convert("L").filter(ImageFilter.GaussianBlur(radius=blur_radius))
+    g2 = img2.convert("L").filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
     arr1 = np.array(g1).astype(np.int16)
     arr2 = np.array(g2).astype(np.int16)
@@ -118,11 +118,12 @@ if pdf_file_1 and pdf_file_2:
     # Valeurs par défaut demandées
     tolerance = st.sidebar.slider("Tolérance (épaisseur de trait)", 0, 100, 50)
     enhance = st.sidebar.slider("Renforcement des différences", 1, 10, 2)
+    blur_radius = st.sidebar.slider("Flou (Gaussian Blur)", 0.0, 3.0, 0.5, 0.1)
 
     img1 = pdf_page_to_image(pdf_bytes_1, page_index - 1)
     img2 = pdf_page_to_image(pdf_bytes_2, page_index - 1)
 
-    diff_img = compute_overlay(img1, img2, tolerance, enhance)
+    diff_img = compute_overlay(img1, img2, tolerance, enhance, blur_radius)
 
     st.subheader(f"🧩 Comparaison page {page_index}/{max_pages}")
     st.markdown(
@@ -152,6 +153,7 @@ if pdf_file_1 and pdf_file_2:
 
 else:
     st.info("Importe deux fichiers PDF pour commencer la comparaison.")
+
 
 
 
